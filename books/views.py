@@ -21,3 +21,26 @@ class GenreViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
+class BookViewSet(viewsets.ModelViewSet):
+    queryset = Book.objects.select_related('genre').all()
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['genre', 'is_premium', 'publication_year']
+    search_fields = ['title', 'author_name', 'description']
+    ordering_fields = ['created_at', 'publication_year', 'title']
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return BookListSerializer
+        return BookSerializer
+
+    @action(detail=False, methods=['get'])
+    def premium(self, request):
+        premium_books = self.queryset.filter(is_premium=True)
+        serializer = self.get_serializer(premium_books, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def free(self, request):
+        free_books = self.queryset.filter(is_premium=False)
+        serializer = self.get_serializer(free_books, many=True)
+        return Response(serializer.data)
